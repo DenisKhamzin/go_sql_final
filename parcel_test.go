@@ -31,7 +31,7 @@ func getTestParcel() Parcel {
 func TestAddGetDelete(t *testing.T) {
 	// preparing connection
 	db, err := sql.Open("sqlite", "tracker.db")
-	require.NoError(t, err, "Require: Driver")
+	require.NoError(t, err, "Require: Driver's error")
 	defer db.Close()
 
 	store := NewParcelStore(db)
@@ -39,32 +39,32 @@ func TestAddGetDelete(t *testing.T) {
 
 	// testing Add()
 	number, err := store.Add(parcel)
-	require.NoError(t, err, "Require: Add")
-	assert.NotNil(t, number, "Assert: Add")
+	require.NoError(t, err, "Require: Add error")
+	assert.NotNil(t, number, "Assert: number is NIL")
 
 	// testing Get()
 	getParcel, err := store.Get(number)
-	require.NoError(t, err, "Require: Get")
+	require.NoError(t, err, "Require: Get error")
 	// comparing values in got parcel and test parcel
-	assert.Equal(t, getParcel.Number, number, "Assert: Get, Number")
-	assert.Equal(t, getParcel.Client, parcel.Client, "Assert: Get, Client")
-	assert.Equal(t, getParcel.Address, parcel.Address, "Assert: Get, Address")
-	assert.Equal(t, getParcel.Status, parcel.Status, "Assert: Get, Status")
-	assert.Equal(t, getParcel.CreatedAt, parcel.CreatedAt, "Assert: Get, Created At")
+	assert.Equal(t, getParcel.Number, number, "Assert: wrong number")
+	assert.Equal(t, getParcel.Client, parcel.Client, "Assert: wrong client")
+	assert.Equal(t, getParcel.Address, parcel.Address, "Assert: wrong address")
+	assert.Equal(t, getParcel.Status, parcel.Status, "Assert: wrong status")
+	assert.Equal(t, getParcel.CreatedAt, parcel.CreatedAt, "Assert: wrong created_at")
 
 	// testing Delete()
 	err = store.Delete(number)
-	require.NoError(t, err, "Require: Delete")
+	require.NoError(t, err, "Require: Delete error")
 	// checking if deleted parcel can't be got
 	_, err = store.Get(number)
-	require.Error(t, err, "Assert: Delete (Get)")
+	require.Error(t, err, "Require: wrong parcel was deleted")
 }
 
 // TestSetAddress tests setting new address
 func TestSetAddress(t *testing.T) {
 	// preparing connection
 	db, err := sql.Open("sqlite", "tracker.db")
-	require.NoError(t, err, "Require: Driver")
+	require.NoError(t, err, "Require: Driver's error")
 	defer db.Close()
 
 	store := NewParcelStore(db)
@@ -72,26 +72,26 @@ func TestSetAddress(t *testing.T) {
 
 	// adding new parcel
 	number, err := store.Add(parcel)
-	require.NoError(t, err, "Require: Add")
-	assert.NotNil(t, number, "Assert: Add")
+	require.NoError(t, err, "Require: Add error")
+	assert.NotNil(t, number, "Assert: number is NIL")
 
 	// seting new address
 	newAddress := "new test address"
 	err = store.SetAddress(number, newAddress)
-	require.NoError(t, err)
+	require.NoError(t, err, "Require: Set address error")
 
 	// checking if address was changed
 	getParcel, err := store.Get(number)
-	require.NoError(t, err)
+	require.NoError(t, err, "Require: Get error")
 	// comparing current address and new address
-	assert.Equal(t, getParcel.Address, newAddress)
+	assert.Equal(t, getParcel.Address, newAddress, "Assert: adresses are not equal")
 }
 
 // TestSetStatus tests setting new status
 func TestSetStatus(t *testing.T) {
 	// preparing connection
 	db, err := sql.Open("sqlite", "tracker.db")
-	require.NoError(t, err, "Require: Driver")
+	require.NoError(t, err, "Require: Driver's error")
 	defer db.Close()
 
 	store := NewParcelStore(db)
@@ -99,25 +99,25 @@ func TestSetStatus(t *testing.T) {
 
 	// adding new parcel
 	number, err := store.Add(parcel)
-	require.NoError(t, err)
-	assert.NotNil(t, number)
+	require.NoError(t, err, "Require: Add error")
+	assert.NotNil(t, number, "Assert: number is NIL")
 
 	// setting new status
 	err = store.SetStatus(number, ParcelStatusSent)
-	require.NoError(t, err)
+	require.NoError(t, err, "Require: Set status error")
 
 	// checking if status was changed
 	getParcel, err := store.Get(number)
-	require.NoError(t, err)
+	require.NoError(t, err, "Require: Get error")
 	// comparing current status and new status
-	assert.Equal(t, getParcel.Status, ParcelStatusSent)
+	assert.Equal(t, getParcel.Status, ParcelStatusSent, "Assert: statuses are not equal")
 }
 
 // TestGetByClient tests parcels by client
 func TestGetByClient(t *testing.T) {
 	// preparing connection
 	db, err := sql.Open("sqlite", "tracker.db")
-	require.NoError(t, err, "Require: Driver")
+	require.NoError(t, err, "Require: Driver's error")
 	defer db.Close()
 
 	store := NewParcelStore(db)
@@ -137,8 +137,8 @@ func TestGetByClient(t *testing.T) {
 	// adding parcels from slice into DB
 	for i := 0; i < len(parcels); i++ {
 		id, err := store.Add(parcels[i])
-		require.NoError(t, err)
-		assert.NotNil(t, id)
+		require.NoError(t, err, "Require: Get error")
+		assert.NotNil(t, id, "Assert: number is NIL")
 		// setting new id for the parcel
 		parcels[i].Number = id
 		// adding parcel into map as a value with id as a key
@@ -147,19 +147,24 @@ func TestGetByClient(t *testing.T) {
 
 	// getting list of parcels by client
 	storedParcels, err := store.GetByClient(client)
-	require.NoError(t, err)
+	require.NoError(t, err, "Require: GetByClient error")
 	// checking length of slice of parcels from DB and length of test slice of parcels
-	assert.Len(t, storedParcels, len(parcels))
+	assert.Len(t, storedParcels, len(parcels), "Assert: lemgths of parcels are not equal")
 
 	// checking parcels from slice and map
 	for _, parcel := range storedParcels {
 		// checking if parcel from slice is in map
-		assert.Contains(t, parcelMap, parcel.Number)
+		assert.Contains(t, parcelMap, parcel.Number, "Assert: parcel is not in the map")
 		// comparing each value for each parcels in slice and map
-		assert.Equal(t, parcel.Number, parcelMap[parcel.Number].Number)
-		assert.Equal(t, parcel.Client, parcelMap[parcel.Number].Client)
-		assert.Equal(t, parcel.Status, parcelMap[parcel.Number].Status)
-		assert.Equal(t, parcel.Address, parcelMap[parcel.Number].Address)
-		assert.Equal(t, parcel.CreatedAt, parcelMap[parcel.Number].CreatedAt)
+		assert.Equal(t, parcel.Number, parcelMap[parcel.Number].Number,
+			"Assert: numbers of compared parcels are not equal")
+		assert.Equal(t, parcel.Client, parcelMap[parcel.Number].Client,
+			"Assert: clients of compared parcels are not equal")
+		assert.Equal(t, parcel.Status, parcelMap[parcel.Number].Status,
+			"Assert: statuses of compared parcels are not equal")
+		assert.Equal(t, parcel.Address, parcelMap[parcel.Number].Address,
+			"Assert: addresses of compared parcels are not equal")
+		assert.Equal(t, parcel.CreatedAt, parcelMap[parcel.Number].CreatedAt,
+			"Assert: created_at field of compared parcels are not equal")
 	}
 }
