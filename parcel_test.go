@@ -95,19 +95,32 @@ func TestSetAddress(t *testing.T) {
 }
 
 // TestSetStatus проверяет обновление статуса
-//func TestSetStatus(t *testing.T) {
-// prepare
-//	db, err := // настройте подключение к БД
+func TestSetStatus(t *testing.T) {
+	// prepare
+	db, err := sql.Open("sqlite", "tracker.db") // настройте подключение к БД
+	require.NoError(t, err, "Require: Driver")
+	defer db.Close()
 
-// add
-// добавьте новую посылку в БД, убедитесь в отсутствии ошибки и наличии идентификатора
+	store := NewParcelStore(db)
+	parcel := getTestParcel()
 
-// set status
-// обновите статус, убедитесь в отсутствии ошибки
+	// add
+	// добавьте новую посылку в БД, убедитесь в отсутствии ошибки и наличии идентификатора
+	number, err := store.Add(parcel)
+	require.NoError(t, err)
+	assert.NotNil(t, number)
 
-// check
-// получите добавленную посылку и убедитесь, что статус обновился
-//}
+	// set status
+	// обновите статус, убедитесь в отсутствии ошибки
+	err = store.SetStatus(number, ParcelStatusSent)
+	require.NoError(t, err)
+
+	// check
+	// получите добавленную посылку и убедитесь, что статус обновился
+	getParcel, err := store.Get(number)
+	require.NoError(t, err)
+	assert.Equal(t, getParcel.Status, ParcelStatusSent)
+}
 
 // TestGetByClient проверяет получение посылок по идентификатору клиента
 //func TestGetByClient(t *testing.T) {
