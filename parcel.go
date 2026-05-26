@@ -15,8 +15,7 @@ func NewParcelStore(db *sql.DB) ParcelStore {
 
 func (s ParcelStore) Add(p Parcel) (int, error) {
 	// реализуйте добавление строки в таблицу parcel, используйте данные из переменной p
-	res, err := s.db.Exec("INSERT INTO parcel (number, client, status, address, created_at) VALUES (:number, :client, :status, :address, :created_at)",
-		sql.Named("number", p.Number),
+	res, err := s.db.Exec("INSERT INTO parcel (client, status, address, created_at) VALUES (:client, :status, :address, :created_at)",
 		sql.Named("client", p.Client),
 		sql.Named("status", p.Status),
 		sql.Named("address", p.Address),
@@ -38,7 +37,7 @@ func (s ParcelStore) Get(number int) (Parcel, error) {
 
 	// заполните объект Parcel данными из таблицы
 	p := Parcel{}
-	row := s.db.QueryRow("SELECT * FROM parcel WHERE id = :id", sql.Named("id", number))
+	row := s.db.QueryRow("SELECT * FROM parcel WHERE number = :number", sql.Named("number", number))
 	err := row.Scan(&p.Number, &p.Client, &p.Status, &p.Address, &p.CreatedAt)
 	if err != nil {
 		return p, err
@@ -52,7 +51,7 @@ func (s ParcelStore) GetByClient(client int) ([]Parcel, error) {
 
 	// заполните срез Parcel данными из таблицы
 	var res []Parcel
-	rows, err := s.db.Query("SELECT * FROM parcel WHERE client = :client", sql.Named("client", client))
+	rows, err := s.db.Query("SELECT number, client, status, address, created_at FROM parcel WHERE client = :client", sql.Named("client", client))
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +92,7 @@ func (s ParcelStore) SetAddress(number int, address string) error {
 		err := errors.New("Адрес не может быть изменен, посылка уже отправлена!")
 		return err
 	}
-	_, err = s.db.Exec("UPDATE parcel SET addredd = :address WHERE number = :number",
+	_, err = s.db.Exec("UPDATE parcel SET address = :address WHERE number = :number",
 		sql.Named("address", address),
 		sql.Named("number", number))
 	if err != nil {
@@ -111,13 +110,11 @@ func (s ParcelStore) Delete(number int) error {
 	if err != nil {
 		return err
 	}
-	if status != ParcelStatusRegistered {
-		err := errors.New("Запись не может быть удалена, посылка уже отправлена!")
-		return err
-	}
-	_, err = s.db.Exec("DELETE FROM parcel WHERE number = :number", sql.Named("number", number))
-	if err != nil {
-		return err
+	if status == ParcelStatusRegistered {
+		_, err = s.db.Exec("DELETE FROM parcel WHERE number = :number", sql.Named("number", number))
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
