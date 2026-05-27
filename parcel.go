@@ -38,8 +38,8 @@ func (s ParcelStore) Get(number int) (Parcel, error) {
 	// add values from got row to empty variable
 	err := row.Scan(&p.Number, &p.Client, &p.Status, &p.Address, &p.CreatedAt)
 	if err != nil {
-		// returning empty Parcel variable in case of error
-		return p, err
+		// returning Parcel{} variable in case of error
+		return Parcel{}, err
 	}
 	return p, nil
 }
@@ -51,6 +51,7 @@ func (s ParcelStore) GetByClient(client int) ([]Parcel, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	// adding parcel into slice for each got row from DB
 	for rows.Next() {
 		p := Parcel{}
@@ -60,6 +61,11 @@ func (s ParcelStore) GetByClient(client int) ([]Parcel, error) {
 			return nil, err
 		}
 		res = append(res, p)
+	}
+	// checking if rows.Next() didn't return error
+	err = rows.Err()
+	if err != nil {
+		return nil, err
 	}
 	return res, nil
 }

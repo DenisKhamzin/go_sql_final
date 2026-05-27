@@ -40,7 +40,7 @@ func TestAddGetDelete(t *testing.T) {
 	// testing Add()
 	number, err := store.Add(parcel)
 	require.NoError(t, err, "Require: Add error")
-	assert.NotNil(t, number, "Assert: number is NIL")
+	assert.NotEqual(t, 0, number, "Assert: wrong number returning")
 
 	// testing Get()
 	getParcel, err := store.Get(number)
@@ -73,7 +73,7 @@ func TestSetAddress(t *testing.T) {
 	// adding new parcel
 	number, err := store.Add(parcel)
 	require.NoError(t, err, "Require: Add error")
-	assert.NotNil(t, number, "Assert: number is NIL")
+	assert.NotEqual(t, 0, number, "Assert: wrong number returning")
 
 	// seting new address
 	newAddress := "new test address"
@@ -155,16 +155,8 @@ func TestGetByClient(t *testing.T) {
 	for _, parcel := range storedParcels {
 		// checking if parcel from slice is in map
 		assert.Contains(t, parcelMap, parcel.Number, "Assert: parcel is not in the map")
-		// comparing each value for each parcels in slice and map
-		assert.Equal(t, parcel.Number, parcelMap[parcel.Number].Number,
-			"Assert: numbers of compared parcels are not equal")
-		assert.Equal(t, parcel.Client, parcelMap[parcel.Number].Client,
-			"Assert: clients of compared parcels are not equal")
-		assert.Equal(t, parcel.Status, parcelMap[parcel.Number].Status,
-			"Assert: statuses of compared parcels are not equal")
-		assert.Equal(t, parcel.Address, parcelMap[parcel.Number].Address,
-			"Assert: addresses of compared parcels are not equal")
-		assert.Equal(t, parcel.CreatedAt, parcelMap[parcel.Number].CreatedAt,
-			"Assert: created_at field of compared parcels are not equal")
+		// comparing parcels in slice and map
+		assert.Equal(t, parcel, parcelMap[parcel.Number],
+			"Assert: compared parcels are not equal")
 	}
 }
