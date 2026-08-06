@@ -6,19 +6,18 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 var (
-	// randSource источник псевдо случайных чисел.
-	// Для повышения уникальности в качестве seed
-	// используется текущее время в unix формате (в виде числа)
+	// randSource is a source of random integers
 	randSource = rand.NewSource(time.Now().UnixNano())
-	// randRange использует randSource для генерации случайных чисел
+	// randRange uses randSource for generating random integers
 	randRange = rand.New(randSource)
 )
 
-// getTestParcel возвращает тестовую посылку
+// getTestParcel returns test parcel
 func getTestParcel() Parcel {
 	return Parcel{
 		Client:    1000,
@@ -28,61 +27,100 @@ func getTestParcel() Parcel {
 	}
 }
 
-// TestAddGetDelete проверяет добавление, получение и удаление посылки
+// TestAddGetDelete tests adding, getting and deleting
 func TestAddGetDelete(t *testing.T) {
-	// prepare
-	db, err := // настройте подключение к БД
+	// preparing connection
+	db, err := sql.Open("sqlite", "tracker.db")
+	require.NoError(t, err, "Require: Driver's error")
+	defer db.Close()
+
 	store := NewParcelStore(db)
 	parcel := getTestParcel()
 
-	// add
-	// добавьте новую посылку в БД, убедитесь в отсутствии ошибки и наличии идентификатора
+	// testing Add()
+	number, err := store.Add(parcel)
+	require.NoError(t, err, "Require: Add error")
+	assert.NotEqual(t, 0, number, "Assert: wrong number returning")
 
-	// get
-	// получите только что добавленную посылку, убедитесь в отсутствии ошибки
-	// проверьте, что значения всех полей в полученном объекте совпадают со значениями полей в переменной parcel
+	// testing Get()
+	getParcel, err := store.Get(number)
+	require.NoError(t, err, "Require: Get error")
+	// comparing values in got parcel and test parcel
+	assert.Equal(t, getParcel.Number, number, "Assert: wrong number")
+	assert.Equal(t, getParcel.Client, parcel.Client, "Assert: wrong client")
+	assert.Equal(t, getParcel.Address, parcel.Address, "Assert: wrong address")
+	assert.Equal(t, getParcel.Status, parcel.Status, "Assert: wrong status")
+	assert.Equal(t, getParcel.CreatedAt, parcel.CreatedAt, "Assert: wrong created_at")
 
-	// delete
-	// удалите добавленную посылку, убедитесь в отсутствии ошибки
-	// проверьте, что посылку больше нельзя получить из БД
+	// testing Delete()
+	err = store.Delete(number)
+	require.NoError(t, err, "Require: Delete error")
+	// checking if deleted parcel can't be got
+	_, err = store.Get(number)
+	require.Error(t, err, "Require: wrong parcel was deleted")
 }
 
-// TestSetAddress проверяет обновление адреса
+// TestSetAddress tests setting new address
 func TestSetAddress(t *testing.T) {
-	// prepare
-	db, err := // настройте подключение к БД
+	// preparing connection
+	db, err := sql.Open("sqlite", "tracker.db")
+	require.NoError(t, err, "Require: Driver's error")
+	defer db.Close()
 
-	// add
-	// добавьте новую посылку в БД, убедитесь в отсутствии ошибки и наличии идентификатора
+	store := NewParcelStore(db)
+	parcel := getTestParcel()
 
-	// set address
-	// обновите адрес, убедитесь в отсутствии ошибки
+	// adding new parcel
+	number, err := store.Add(parcel)
+	require.NoError(t, err, "Require: Add error")
+	assert.NotEqual(t, 0, number, "Assert: wrong number returning")
+
+	// seting new address
 	newAddress := "new test address"
+	err = store.SetAddress(number, newAddress)
+	require.NoError(t, err, "Require: Set address error")
 
-	// check
-	// получите добавленную посылку и убедитесь, что адрес обновился
+	// checking if address was changed
+	getParcel, err := store.Get(number)
+	require.NoError(t, err, "Require: Get error")
+	// comparing current address and new address
+	assert.Equal(t, getParcel.Address, newAddress, "Assert: adresses are not equal")
 }
 
-// TestSetStatus проверяет обновление статуса
+// TestSetStatus tests setting new status
 func TestSetStatus(t *testing.T) {
-	// prepare
-	db, err := // настройте подключение к БД
+	// preparing connection
+	db, err := sql.Open("sqlite", "tracker.db")
+	require.NoError(t, err, "Require: Driver's error")
+	defer db.Close()
 
-	// add
-	// добавьте новую посылку в БД, убедитесь в отсутствии ошибки и наличии идентификатора
+	store := NewParcelStore(db)
+	parcel := getTestParcel()
 
-	// set status
-	// обновите статус, убедитесь в отсутствии ошибки
+	// adding new parcel
+	number, err := store.Add(parcel)
+	require.NoError(t, err, "Require: Add error")
+	assert.NotNil(t, number, "Assert: number is NIL")
 
-	// check
-	// получите добавленную посылку и убедитесь, что статус обновился
+	// setting new status
+	err = store.SetStatus(number, ParcelStatusSent)
+	require.NoError(t, err, "Require: Set status error")
+
+	// checking if status was changed
+	getParcel, err := store.Get(number)
+	require.NoError(t, err, "Require: Get error")
+	// comparing current status and new status
+	assert.Equal(t, getParcel.Status, ParcelStatusSent, "Assert: statuses are not equal")
 }
 
-// TestGetByClient проверяет получение посылок по идентификатору клиента
+// TestGetByClient tests parcels by client
 func TestGetByClient(t *testing.T) {
-	// prepare
-	db, err := // настройте подключение к БД
+	// preparing connection
+	db, err := sql.Open("sqlite", "tracker.db")
+	require.NoError(t, err, "Require: Driver's error")
+	defer db.Close()
 
+	store := NewParcelStore(db)
 	parcels := []Parcel{
 		getTestParcel(),
 		getTestParcel(),
@@ -90,32 +128,35 @@ func TestGetByClient(t *testing.T) {
 	}
 	parcelMap := map[int]Parcel{}
 
-	// задаём всем посылкам один и тот же идентификатор клиента
+	// setting random value for each parcel
 	client := randRange.Intn(10_000_000)
 	parcels[0].Client = client
 	parcels[1].Client = client
 	parcels[2].Client = client
 
-	// add
+	// adding parcels from slice into DB
 	for i := 0; i < len(parcels); i++ {
-		id, err := // добавьте новую посылку в БД, убедитесь в отсутствии ошибки и наличии идентификатора
-
-		// обновляем идентификатор добавленной у посылки
+		id, err := store.Add(parcels[i])
+		require.NoError(t, err, "Require: Get error")
+		assert.NotNil(t, id, "Assert: number is NIL")
+		// setting new id for the parcel
 		parcels[i].Number = id
-
-		// сохраняем добавленную посылку в структуру map, чтобы её можно было легко достать по идентификатору посылки
+		// adding parcel into map as a value with id as a key
 		parcelMap[id] = parcels[i]
 	}
 
-	// get by client
-	storedParcels, err := // получите список посылок по идентификатору клиента, сохранённого в переменной client
-	// убедитесь в отсутствии ошибки
-	// убедитесь, что количество полученных посылок совпадает с количеством добавленных
+	// getting list of parcels by client
+	storedParcels, err := store.GetByClient(client)
+	require.NoError(t, err, "Require: GetByClient error")
+	// checking length of slice of parcels from DB and length of test slice of parcels
+	assert.Len(t, storedParcels, len(parcels), "Assert: lemgths of parcels are not equal")
 
-	// check
+	// checking parcels from slice and map
 	for _, parcel := range storedParcels {
-		// в parcelMap лежат добавленные посылки, ключ - идентификатор посылки, значение - сама посылка
-		// убедитесь, что все посылки из storedParcels есть в parcelMap
-		// убедитесь, что значения полей полученных посылок заполнены верно
+		// checking if parcel from slice is in map
+		assert.Contains(t, parcelMap, parcel.Number, "Assert: parcel is not in the map")
+		// comparing parcels in slice and map
+		assert.Equal(t, parcel, parcelMap[parcel.Number],
+			"Assert: compared parcels are not equal")
 	}
 }

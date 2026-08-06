@@ -97,12 +97,19 @@ func (s ParcelService) Delete(number int) error {
 }
 
 func main() {
-	// настройте подключение к БД
+	// preparing connection
+	db, err := sql.Open("sqlite", "tracker.db")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer db.Close()
 
-	store := // создайте объект ParcelStore функцией NewParcelStore
+	// creating ParcelStore object
+	store := NewParcelStore(db)
 	service := NewParcelService(store)
 
-	// регистрация посылки
+	// register parcel
 	client := 1
 	address := "Псков, д. Пушкина, ул. Колотушкина, д. 5"
 	p, err := service.Register(client, address)
@@ -111,7 +118,7 @@ func main() {
 		return
 	}
 
-	// изменение адреса
+	// change address
 	newAddress := "Саратов, д. Верхние Зори, ул. Козлова, д. 25"
 	err = service.ChangeAddress(p.Number, newAddress)
 	if err != nil {
@@ -119,51 +126,51 @@ func main() {
 		return
 	}
 
-	// изменение статуса
+	// change status
 	err = service.NextStatus(p.Number)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	// вывод посылок клиента
+	// show list of client's parcels
 	err = service.PrintClientParcels(client)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	// попытка удаления отправленной посылки
+	// trying to delet sent parcel
 	err = service.Delete(p.Number)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	// вывод посылок клиента
-	// предыдущая посылка не должна удалиться, т.к. её статус НЕ «зарегистрирована»
+	// show list of client's parcels
+	// the last parcel wasn't deleted
 	err = service.PrintClientParcels(client)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	// регистрация новой посылки
+	// register new parcel
 	p, err = service.Register(client, address)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	// удаление новой посылки
+	// deleting new parcel
 	err = service.Delete(p.Number)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	// вывод посылок клиента
-	// здесь не должно быть последней посылки, т.к. она должна была успешно удалиться
+	// show list of client's parcels
+	// the list doesn't contain last parcel, because it was deleted
 	err = service.PrintClientParcels(client)
 	if err != nil {
 		fmt.Println(err)
